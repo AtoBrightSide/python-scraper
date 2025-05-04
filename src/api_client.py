@@ -19,14 +19,17 @@ class APIClient:
         holdings = []
         # Expected record: [symbol, issuer_name, class, cusip, value, percentage, shares, principal, option_type]
         for record in holdings_list:
-            if record[2] == 'COM' and record[8] == None:  # Filter only COM class holdings with no option_type.
-                if record[0] and record[4] and record[5] and record[6]:
-                    holding = {
-                        "symbol": record[0],
-                        "class": record[2],
-                        "value": record[4],
-                        "percentage": record[5],
-                        "shares": record[6]
-                    }
-                    holdings.append(holding)
+            # Filter only COM class holdings with no option_type.
+            if record[0] is None or record[8] is not None:
+                continue
+
+            if record[2] == 'COM':
+                holding = {
+                    "symbol": record[0],
+                    "class": record[2],
+                    "value": record[4],
+                    "percentage": record[5],
+                    "shares": record[6]
+                }
+                holdings.append(holding)
         return holdings

@@ -102,9 +102,9 @@ class ThirteenFScraper:
         """
         Main pipeline:
           1. Get all the managers.
-          2. For each manager, get all quarterly filings.
-          3. For each filing, fetch holdings via the API.
-          4. Infer transaction type based on the change in shares.
+          2. For each manager, get all quarterly filings of the type 13F-HR.
+          3. For each quarter, fetch holdings via the API.
+          4. Infer transaction type based on the change in shares between consecutive years.
           5. Write data out to a CSV.
         """
         managers = self.get_managers()
