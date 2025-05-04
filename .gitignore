@@ -10,9 +10,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
 # Logs
 *.log
 
@@ -26,6 +23,3 @@ Thumbs.db
 
 # Data directories
 data
-
-# Output files
-output/
