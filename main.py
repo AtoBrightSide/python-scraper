@@ -3,8 +3,9 @@ from src.scraper import ThirteenFScraper
 
 
 def main():
-    scraper = ThirteenFScraper()
-    asyncio.run(scraper.run(output_filename="./data/final.csv"))
+    output_filename = input("Enter output file name: ")
+    scraper = ThirteenFScraper(output_filename=f"./data/{output_filename}.csv")
+    asyncio.run(scraper.run())
 
 
 if __name__ == "__main__":
