@@ -15,8 +15,6 @@ class APIClient:
         Filters out records with None symbol or a non-null option_type. Only returns records with class 'COM'.
         Returns:
             List[dict]: [{ symbol, class, value, percentage, shares }, ... ]
-
-
         """
         url = self.base_api_url + filing_id
         async with session.get(url) as response:
@@ -29,15 +27,15 @@ class APIClient:
                 # Skip records with missing symbols or that have a non-null option_type.
                 if record[0] is None or record[8] is not None:
                     continue
-                
+
                 # Scrape holdings for COM class only
-                if record[2] == 'COM':
+                if record[2] == "COM":
                     holding = {
                         "symbol": record[0],
                         "class": record[2],
                         "value": record[4],
                         "percentage": record[5],
-                        "shares": record[6]
+                        "shares": record[6],
                     }
                     holdings.append(holding)
             return holdings
