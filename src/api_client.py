@@ -11,8 +11,8 @@ class APIClient:
 
     async def fetch_holdings(self, filing_id: str, session: aiohttp.ClientSession):
         """
-        Fetch holdings data for a given filing_id using the asynchronous session.
-        Filters out records with None symbol or a non-null option_type. Only returns records with class 'COM'.
+        Fetch holdings data for a given quarter using asynchronously.
+        Filters out records with None for stock_symbol or a non-null option_type. Only returns records with class 'COM'.
         Returns:
             List[dict]: [{ symbol, class, value, percentage, shares }, ... ]
         """
@@ -38,4 +38,5 @@ class APIClient:
                         "shares": record[6],
                     }
                     holdings.append(holding)
+
             return holdings

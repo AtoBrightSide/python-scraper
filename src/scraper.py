@@ -1,7 +1,8 @@
-import re
+import re, time
 import asyncio
 import aiohttp
 import pandas as pd
+import numpy as np
 from bs4 import BeautifulSoup
 
 # Local imports
@@ -10,15 +11,17 @@ from src.api_client import APIClient
 
 
 class ThirteenFScraper:
-    def __init__(self):
+    def __init__(self, output_filename="./data/final.csv"):
         self.base_url = "https://13f.info/"
         self.managers_url = f"{self.base_url}/managers"
         self.api_client = APIClient()
+        self.output_filename = output_filename
 
     async def get_managers(self, session: aiohttp.ClientSession):
         """
         Scrape the /managers page and return a list of Manager objects.
         """
+        print("Loading managers ...")
         async with session.get(self.managers_url) as response:
             response.raise_for_status()
             text = await response.text()
@@ -49,6 +52,8 @@ class ThirteenFScraper:
                         else None
                     )
                     managers.append(Manager(manager_name, manager_url))
+
+            print(f"Finished loading {len(managers)} managers")
             return managers
 
     async def get_filings_for_manager(
@@ -108,7 +113,7 @@ class ThirteenFScraper:
         failed_records = []
         for filing, res in zip(manager.filings, results):
             if isinstance(res, Exception):
-                print(f"Error fetching holdings for filing {filing.filing_id}: {res}")
+                print(f"Error fetching holdings for {manager.name} quarter: {filing.quarter} \n{res}")
                 failed_records.append(
                     {
                         "fund_name": manager.name,
@@ -121,9 +126,76 @@ class ThirteenFScraper:
             else:
                 holdings_by_quarter[filing] = res
 
+        print(
+            f"Finished scraping {len(holdings_by_quarter.keys())} holdings for {manager.name}"
+        )
         return holdings_by_quarter, failed_records
 
-    async def run(self, output_filename="./data/final.csv"):
+    def process_records(self, records):
+        """
+        Processes raw records using Pandas:
+          - Converts to DataFrame
+          - Sorts and groups the data
+          - Computes the previous_shares, change, percentage_change
+          - Infers the transaction_type
+          - Writes the final CSV file (excluding the temporary columns)
+        """
+        # Convert aggregated records into a DataFrame.
+        df = pd.DataFrame(records)
+        df["filing_date"] = pd.to_datetime(df["filing_date"], errors="coerce")
+        df = df.sort_values(by=["fund_name", "stock_symbol", "filing_date"])
+
+        # creating prev_shares column for calculation purposes
+        df["prev_shares"] = df.groupby(["fund_name", "stock_symbol"])["shares"].shift(1)
+
+        # if there is no prev_share, then the current holding is NEW
+        df["new_holding"] = df["prev_shares"].isna()
+
+        # Calculate the share change, based on whether the holding is new or not
+        df["change"] = df.apply(
+            lambda row: (
+                row["shares"]
+                if row["new_holding"]
+                else row["shares"] - row["prev_shares"]
+            ),
+            axis=1,
+        )
+
+        # if holding is new, the pct_change will be NaN, since there would be no meaning in calculating the change
+        df["pct_change"] = df.apply(
+            lambda row: (
+                np.nan
+                if row["new_holding"] or row["prev_shares"] == 0
+                else round((row["change"] / row["prev_shares"]) * 100, 2)
+            ),
+            axis=1,
+        )
+
+        # if holding is new, its considered a buy.
+        df["inferred_transaction_type"] = df.apply(
+            lambda row: (
+                "buy"
+                if row["new_holding"] and row["shares"] > 0
+                else (
+                    "buy"
+                    if (not row["new_holding"] and row["change"] > 0)
+                    else (
+                        "sell"
+                        if (not row["new_holding"] and row["change"] < 0)
+                        else "no change"
+                    )
+                )
+            ),
+            axis=1,
+        )
+
+        # Remove temporary columns that are not required for final output
+        df.drop(columns=["prev_shares", "new_holding"], inplace=True)
+
+        df.to_csv(self.output_filename, index=False)
+        print(f"Final CSV saved to {self.output_filename}")
+
+    async def run(self):
         """
         Main pipeline:
           1. Retrieve manager data concurrently.
@@ -137,17 +209,22 @@ class ThirteenFScraper:
         async with aiohttp.ClientSession(
             headers={"User-Agent": "Mozilla/5.0 (compatible; DataScraper/1.0)"}
         ) as session:
+            start_time = time.time()
             managers = await self.get_managers(session)
             # Fetch filings in parallel for all managers.
+            get_filings_tasks = []
             get_filings_tasks = [
                 self.get_filings_for_manager(manager, session) for manager in managers
             ]
             await asyncio.gather(*get_filings_tasks)
             records = []
+
             # Process each manager sequentially
             for manager in managers:
+                # if a manager has no quarters of form type 13F-HR, we skip it.
                 if not manager.filings:
                     continue
+
                 print(f"Processing manager: {manager.name} | URL: {manager.url}")
                 holdings_by_quarter, failed_records = await self.fetch_all_holdings(
                     manager, session
@@ -156,7 +233,9 @@ class ThirteenFScraper:
                 for filing in manager.filings:
                     holdings = holdings_by_quarter.get(filing)
                     if not holdings:
-                        print(f"Couldn't find this: {filing}")
+                        print(
+                            f"Couldn't find holdings for manager: {manager.name}, quarter: {filing.quarter}"
+                        )
                         continue
                     for holding in holdings:
                         symbol = holding["symbol"]
@@ -175,23 +254,14 @@ class ThirteenFScraper:
                 print("No records fetched. Exiting...")
                 return
 
-            # Convert aggregated records into a DataFrame.
-            df = pd.DataFrame(records)
-            df["filing_date"] = pd.to_datetime(df["filing_date"], errors="coerce")
-            df = df.sort_values(by=["fund_name", "stock_symbol", "filing_date"])
-            df["prev_shares"] = df.groupby(["fund_name", "stock_symbol"])[
-                "shares"
-            ].shift(1)
-            df["change"] = df["shares"] - df["prev_shares"]
-            df["pct_change"] = (df["change"] / df["prev_shares"] * 100).round(2)
-            df["inferred_transaction_type"] = df["change"].apply(
-                lambda x: "buy" if x > 0 else ("sell" if x < 0 else "no change")
-            )
-            df["change"] = df["change"].fillna(0)
-            df["pct_change"] = df["pct_change"].fillna(0)
-            df.drop(columns=["prev_shares"], inplace=True)
-            df.to_csv(output_filename, index=False)
-            print(f"Final CSV saved to {output_filename}")
+            print(f"# # # Finished processing. # # #")
+            end_time = time.time()
+
+            print(f"Time for fetching data: {end_time - start_time}")
+
+            self.process_records(records)
+
+            print(f"Time taken to write to file: {time.time() - end_time}")
 
             print(f"Total failed holdings: {len(failed_records_total)}")
             if failed_records_total:
