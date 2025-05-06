@@ -1,4 +1,4 @@
-import re, time
+import re, time, os
 import asyncio
 import aiohttp
 import pandas as pd
@@ -15,7 +15,9 @@ class ThirteenFScraper:
         self.base_url = "https://13f.info/"
         self.managers_url = f"{self.base_url}/managers"
         self.api_client = APIClient()
-        self.output_filename = output_filename
+        
+        self.output_filename = os.path.join("data", output_filename)
+        os.makedirs("data", exist_ok = True)
 
     async def get_managers(self, session: aiohttp.ClientSession):
         """

@@ -49,7 +49,11 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
    python main.py
    ```
 
-2. **When prompted, enter a name for the output file** (the CSV will be saved in the `data/` directory).
+2. **Setting up directory for output file**
+      
+      - Create a directory called `data` at the root of the project
+
+      - When prompted, enter a name for the output file (the CSV will be saved in the `data/` directory).
 
 3. **Output:**
    - The processed CSV will be saved to `data/<your_output_file>.csv`.

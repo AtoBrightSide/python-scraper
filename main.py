@@ -4,7 +4,7 @@ from src.scraper import ThirteenFScraper
 
 def main():
     output_filename = input("Enter output file name: ")
-    scraper = ThirteenFScraper(output_filename=f"./data/{output_filename}.csv")
+    scraper = ThirteenFScraper(output_filename=f"{output_filename}.csv")
     asyncio.run(scraper.run())
 
 
