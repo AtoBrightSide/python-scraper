@@ -64,7 +64,7 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
 
 - The script only processes filings of type **13F-HR** and holdings with class **COM**.
 - Make sure the `data/` directory exists before running the script.
-- For large data sets, the process may take several minutes.
+- For large data sets, the process may take several minutes (as of right now, it takes ~8 minutes, which was brought down from ~60 minutes by incorporating concurrent requests)
 
 ## Additional Thoughts
 
