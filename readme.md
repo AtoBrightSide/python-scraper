@@ -5,7 +5,7 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
 ## Features
 
 - **Asynchronous scraping** of fund managers and their 13F-HR filings.
-- **API integration** to fetch detailed holdings for each filing.
+- **API scraping - with exponential decay** to fetch detailed holdings for each filing.
 - **Data aggregation** and transformation using Pandas.
 - **Transaction inference** (buy/sell/no change) and percentage change calculations.
 - **CSV export** of the final processed dataset.
@@ -67,11 +67,8 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
 ## Notes
 
 - The script only processes filings of type **13F-HR** and holdings with class **COM**.
-- Make sure the `data/` directory exists before running the script.
 - For large data sets, the process may take several minutes (as of right now, it takes ~8 minutes, which was brought down from ~60 minutes by incorporating concurrent requests)
 
 ## Additional Thoughts
 
 - For larger data sets, it will be preferable to write the data to the csv in batches, instead of writing all rows at once (as has been done here), but since the size of the data is small (~100MB), storing the records in memory then writing it to the csv sounded like the more optimal approach.
-
-- As of right now, failed holdings are logged for review. However, for production settings, it would be better to implement retry mechanisms.
