@@ -1,6 +1,9 @@
 import asyncio
+from dotenv import load_dotenv
+
 from src.scraper import ThirteenFScraper
 
+load_dotenv()
 
 def main():
     output_filename = input("Enter output file name: ")

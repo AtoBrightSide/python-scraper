@@ -1,4 +1,4 @@
-import aiohttp, asyncio
+import aiohttp, asyncio, os
 
 
 class APIClient:
@@ -7,7 +7,11 @@ class APIClient:
     """
 
     def __init__(self):
-        self.base_api_url = "https://13f.info/data/13f/"
+        try:
+            self.base_api_url = os.environ["BASE_API_URL"]
+        except KeyError as e:
+            print(f"Environment variable {e} not found")
+            raise e
 
     async def fetch_holdings(self, filing_id: str, session: aiohttp.ClientSession):
         """
@@ -21,7 +25,6 @@ class APIClient:
 
         for attempt in range(max_retries + 1):
             try:
-
                 url = self.base_api_url + filing_id
                 async with session.get(url) as response:
                     if response.status == 500:
@@ -51,8 +54,8 @@ class APIClient:
                                 "shares": record[6],
                             }
                             holdings.append(holding)
-
                     return holdings
+
             except aiohttp.ClientResponseError as e:
                 if e.status == 500:
                     if attempt < max_retries:
