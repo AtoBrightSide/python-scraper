@@ -40,11 +40,11 @@ class APIClient:
                     holdings = []
                     # [symbol, issuer_name, class, cusip, value, percentage, shares, principal, option_type]
                     for record in holdings_list:
-                        # Skip records with missing symbols or that have a non-null option_type.
+                        # skip records with missing symbols or that have a non-null option_type.
                         if record[0] is None or record[8] is not None:
                             continue
 
-                        # Scrape holdings for COM class only
+                        # scrape holdings for COM class only
                         if record[2] == "COM":
                             holding = {
                                 "symbol": record[0],
@@ -71,7 +71,7 @@ class APIClient:
                 else:
                     raise e
             except Exception as e:
-                # For other types of exceptions, we'll similarly use the retry logic.
+                # handle other types of exceptions similarly
                 if attempt < max_retries:
                     delay = base_delay * (2**attempt)
                     print(

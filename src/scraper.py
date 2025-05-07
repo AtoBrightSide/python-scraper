@@ -158,7 +158,7 @@ class ThirteenFScraper:
         # if there is no prev_share, then the current holding is NEW
         df["new_holding"] = df["prev_shares"].isna()
 
-        # Calculate the share change, based on whether the holding is new or not
+        # calculate the share change, based on whether the holding is new or not
         df["change"] = df.apply(
             lambda row: (
                 row["shares"]
@@ -196,7 +196,7 @@ class ThirteenFScraper:
             axis=1,
         )
 
-        # Remove temporary columns that are not required for final output
+        # remove temporary columns that are not required for final output
         df.drop(columns=["prev_shares", "new_holding"], inplace=True)
 
         df.to_csv(self.output_filename, index=False)
@@ -226,7 +226,7 @@ class ThirteenFScraper:
             await asyncio.gather(*get_filings_tasks)
             records = []
 
-            # Process each manager sequentially
+            # processing each manager sequentially
             for manager in managers:
                 # if a manager has no quarters of form type 13F-HR, we skip it.
                 if not manager.filings:
