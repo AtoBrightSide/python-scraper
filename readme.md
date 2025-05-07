@@ -21,7 +21,7 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/AtoBrightSide/scraper-assignment.git
+   [git clone https://github.com/AtoBrightSide/scraper-assignment.git](https://github.com/AtoBrightSide/scraping-assignment.git)
    cd scraper-assignment/
    ```
 
