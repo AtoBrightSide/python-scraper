@@ -1,23 +1,27 @@
-import re, time, os
+import re, time, os, csv
 import asyncio
 import aiohttp
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 
-# Local imports
 from src.models import Manager, Filing
 from src.api_client import APIClient
 
 
 class ThirteenFScraper:
     def __init__(self, output_filename="./data/final.csv"):
-        self.base_url = "https://13f.info/"
-        self.managers_url = f"{self.base_url}/managers"
-        self.api_client = APIClient()
-        
+        try:
+            # load from environment variable
+            self.base_url = os.environ["BASE_URL"]
+            self.managers_url = f"{self.base_url}/managers"
+            self.api_client = APIClient()
+        except KeyError as e:
+            print(f"Environment variable {e} not found")
+            raise e
+
         self.output_filename = os.path.join("data", output_filename)
-        os.makedirs("data", exist_ok = True)
+        os.makedirs("data", exist_ok=True)
 
     async def get_managers(self, session: aiohttp.ClientSession):
         """
@@ -115,7 +119,9 @@ class ThirteenFScraper:
         failed_records = []
         for filing, res in zip(manager.filings, results):
             if isinstance(res, Exception):
-                print(f"Error fetching holdings for {manager.name} quarter: {filing.quarter} \n{res}")
+                print(
+                    f"Error fetching holdings for {manager.name} quarter: {filing.quarter} \n{res}"
+                )
                 failed_records.append(
                     {
                         "fund_name": manager.name,
@@ -142,7 +148,6 @@ class ThirteenFScraper:
           - Infers the transaction_type
           - Writes the final CSV file (excluding the temporary columns)
         """
-        # Convert aggregated records into a DataFrame.
         df = pd.DataFrame(records)
         df["filing_date"] = pd.to_datetime(df["filing_date"], errors="coerce")
         df = df.sort_values(by=["fund_name", "stock_symbol", "filing_date"])
@@ -256,19 +261,28 @@ class ThirteenFScraper:
                 print("No records fetched. Exiting...")
                 return
 
-            print(f"# # # Finished processing. # # #")
+            print(f"\nFinished scraping\n")
             end_time = time.time()
 
-            print(f"Time for fetching data: {end_time - start_time}")
+            print(
+                f"\nTime taken to fetch data: {round((end_time - start_time) / 60)} minutes\n"
+            )
 
             self.process_records(records)
 
-            print(f"Time taken to write to file: {time.time() - end_time}")
+            print(
+                f"\nTime taken to write {len(records)} lines to file: {round((time.time() - end_time) / 60)} minutes\n\n"
+            )
 
             print(f"Total failed holdings: {len(failed_records_total)}")
             if failed_records_total:
-                print("Failed records:")
-                for rec in failed_records_total:
-                    print(
-                        f"Manager: {rec['fund_name']}, Quarter: {rec['quarter']}, Error: {rec['error']}"
-                    )
+                with open("./data/failed_holdings.csv", "w") as errorFile:
+                    writer = csv.writer(errorFile)
+                    print("Failed records:")
+                    for rec in failed_records_total:
+                        print(
+                            f"Manager: {rec['fund_name']}, Quarter: {rec['quarter']}, Error: {rec['error']}"
+                        )
+                        writer.writerow(
+                            [rec["fund_name"], rec["quarter"], rec["error"]]
+                        )
