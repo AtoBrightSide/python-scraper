@@ -180,6 +180,7 @@ class ThirteenFScraper:
           - Infers the transaction_type
           - Writes the final CSV file (excluding the temporary columns)
         """
+        logger.info(f"Writing {len(records)} lines to file")
         df = pd.DataFrame(records)
         df["filing_date"] = pd.to_datetime(df["filing_date"], errors="coerce")
         df = df.sort_values(by=["fund_name", "stock_symbol", "filing_date"])
