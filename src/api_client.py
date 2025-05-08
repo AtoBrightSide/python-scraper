@@ -55,7 +55,6 @@ class APIClient:
                                 "shares": record[6],
                             }
                             holdings.append(holding)
-                    logger.info(f"")
                     return holdings
 
             except aiohttp.ClientResponseError as e:
@@ -80,18 +79,12 @@ class APIClient:
                     delay = base_delay * (2**attempt)
                     jitter = random.uniform(0, 0.5)
                     logger.warning(
-                        "Attempt %d for filing %s failed with error '%s'; Retrying in %.2f seconds...",
-                        attempt + 1,
-                        filing_id,
-                        str(e),
-                        delay + jitter,
+                        f"Attempt {attempt + 1} for {url} failed with error {e}; Retrying in {delay + jitter} seconds..."
                     )
                     await asyncio.sleep(delay + jitter)
                     continue
                 else:
                     logger.error(
-                        "Max retries reached for filing %s after error '%s'.",
-                        filing_id,
-                        e,
+                        f"Max retries reached for filing {url} after error {e}."
                     )
                     raise e

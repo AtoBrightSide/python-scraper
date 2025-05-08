@@ -47,12 +47,12 @@ def merge_batch_files(
 
     # concatenate all DataFrames.
     merged_df = pd.concat(dataframes, ignore_index=True)
-    logger.info(
-        f"Completed merging batch files in {round((time.time() - start_time) / 60, 2)} minutes"
-    )
 
     # Write the merged DataFrame to the output CSV.
     merged_df.to_csv(output_file, index=False)
+    logger.info(
+        f"Completed merging batch files in {round((time.time() - start_time) / 60, 2)} minutes"
+    )
     print(
         f"Merged {len(batch_files)} files with a total of {len(merged_df)} records into {output_file}"
     )

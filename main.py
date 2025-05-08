@@ -7,7 +7,7 @@ from src.utils import merge_batch_files
 import logging
 
 logging.basicConfig(
-    level=logging.INFO,  # Or DEBUG if you want detailed logs
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -16,7 +16,6 @@ load_dotenv()
 
 
 def prompt_user():
-    print("\nWelcome to the 13F Holdings Scraper CLI.")
     print("Please choose one of the following options:")
     print("1) Full Scrape - Scrape all managers and holdings (A-Z)")
     print("2) Merge Batches - Merge all batch CSV files into one final CSV")
@@ -33,7 +32,7 @@ def main():
         if choice == "1":
             # scrape of all managers and holdings.
             print("Starting full scrape. This may take a while...")
-            scraper = ThirteenFScraper()  # Adjust instantiation as needed
+            scraper = ThirteenFScraper()
             asyncio.run(scraper.run())
             print("Full scrape completed.")
         elif choice == "2":

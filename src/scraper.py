@@ -359,12 +359,16 @@ class ThirteenFScraper:
                 logger.warning(f"No managers found for letter '{letter}'.")
                 return
 
-            await self._process_manager_batch(letter.upper(), managers_list, session)
+            batch_holding_count, failed_holding_count = (
+                await self._process_manager_batch(
+                    letter.upper(), managers_list, session
+                )
+            )
 
             end_time = time.time()
 
             logger.info(
-                f"Batch run for letter {letter.upper()} completed in {round((end_time - start_time) / 60)} minutes"
+                f"Batch for letter {letter.upper()} completed in {round((end_time - start_time) / 60)} minutes \nTotal holdings processed: {batch_holding_count}\nFailed holdings count: {len(failed_holding_count)}"
             )
 
     async def run(self):
