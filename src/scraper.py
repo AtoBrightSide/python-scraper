@@ -360,7 +360,12 @@ class ThirteenFScraper:
                 return
 
             await self._process_manager_batch(letter.upper(), managers_list, session)
-            logger.info(f"Batch run for letter {letter.upper()} completed.")
+
+            end_time = time.time()
+
+            logger.info(
+                f"Batch run for letter {letter.upper()} completed in {round((end_time - start_time) / 60)} minutes"
+            )
 
     async def run(self):
         """

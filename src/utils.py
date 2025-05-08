@@ -1,6 +1,7 @@
-import os
-import glob
+import os, glob, logging, time
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def merge_batch_files(
@@ -25,32 +26,30 @@ def merge_batch_files(
     batch_files = glob.glob(file_pattern)
 
     if not batch_files:
-        print("No batch files found.")
+        logger.info("No batch files found.")
         return None
 
     # Read and accumulate all DataFrames.
     dataframes = []
+    start_time = time.time()
+    logger.info(f"Started merging batch files")
     for file in batch_files:
         try:
             df = pd.read_csv(file)
             dataframes.append(df)
-            print(f"Read {len(df)} records from {file}")
+            logger.info(f"Read {len(df)} records from {file}")
         except Exception as e:
-            print(f"Error reading file {file}: {e}")
+            logger.error(f"Error reading file {file}: {e}")
 
     if not dataframes:
-        print("No data could be read from the batch files.")
+        logger.warning("No data could be read from the batch files.")
         return None
 
-    # Concatenate all DataFrames.
+    # concatenate all DataFrames.
     merged_df = pd.concat(dataframes, ignore_index=True)
-
-    # Optionally sort the merged DataFrame.
-    if "fund_name" in merged_df.columns and "filing_date" in merged_df.columns:
-        merged_df["filing_date"] = pd.to_datetime(
-            merged_df["filing_date"], errors="coerce"
-        )
-        merged_df = merged_df.sort_values(by=["fund_name", "filing_date"])
+    logger.info(
+        f"Completed merging batch files in {round((time.time() - start_time) / 60, 2)} minutes"
+    )
 
     # Write the merged DataFrame to the output CSV.
     merged_df.to_csv(output_file, index=False)

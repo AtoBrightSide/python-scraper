@@ -39,7 +39,7 @@ def main():
         elif choice == "2":
             # merge all batch files into one final CSV.
             print("Merging batch files into one final CSV...")
-            merged_df = merge_batch_files()  # You can adjust parameters if needed.
+            merged_df = merge_batch_files(input_directory="data/batches")
             if merged_df is not None:
                 print("Merge completed successfully.")
             else:
