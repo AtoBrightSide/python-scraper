@@ -6,10 +6,11 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
 
 - **Asynchronous scraping** of fund managers and their 13F-HR filings.
 - **API scraping - with exponential decay** to fetch detailed holdings for each filing.
+- **Hierarchical batch** processing design to streamline scraping execution.
 - **Data aggregation** and transformation using Pandas.
 - **Transaction inference** (buy/sell/no change) and percentage change calculations.
-- **CSV export** of the final processed dataset.
-- **Error logging and file saving** for failed records.
+- **Robust CSV** export of the final processed dataset
+- **Improved logging** using Python's logging module for better tracking and error management.
 
 ## Prerequisites
 
@@ -22,21 +23,21 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
 
    ```bash
    git clone https://github.com/AtoBrightSide/scraping-assignment.git
-   cd scraper-assignment/
+   cd scraping-assignment/
    ```
 
 2. **Create and activate a virtual environment:**
 
 - Windows
-   ```bash
-   python -m venv env
-   .\env\Scripts\activate
-   ```
-- Linux/macOS:   
-   ```bash
-   python3 -m venv env
-   source env/bin/activate
-   ```
+  ```bash
+  python -m venv env
+  .\env\Scripts\activate
+  ```
+- Linux/macOS:
+  ```bash
+  python3 -m venv env
+  source env/bin/activate
+  ```
 
 3. **Install dependencies:**
    ```bash
@@ -62,23 +63,28 @@ This project is a take-home assignment for gomanzanas. It asynchronously scrapes
    python main.py
    ```
 
-   - When prompted, enter a name for the output file (the CSV will be saved in the `data/` directory).
+   - This will display a list of options to choose from on the terminal.
+     - **Full Scrape** - scrapes all managers and their holdings (a - z), may take upto 2 hours.
+     - **Merge Batches** - Merges all batch files into one final CSV file.
+     - **Rescrape one batch** - Scrape holdings for managers starting with a specific letter (in case of errors).
 
 1. **Output:**
-   - The processed CSV will be saved to `data/<your_output_file>.csv`.
+   - **Final processed CSV** will be saved to `data/final_merged.csv` (~2.5GB)
+   - **Batch CSVs** will be saved to `data/batches`.
 
 ## Project Structure
 
-- **main.py**: Entry point for running the scraper.
+- **main.py**: Entry point for running the scraper.(will display a list of options)
 - **src/scraper.py**: Main scraping and data processing logic ([`ThirteenFScraper`](src/scraper.py)).
 - **src/api_client.py**: Handles API requests for holdings data ([`APIClient`](src/api_client.py)).
 - **src/models.py**: Data models for managers and filings ([`Manager`](src/models.py), [`Filing`](src/models.py)).
+- **utils.py**: Batch file merging functionality ([`merge_batch_files`](src/utils.py)).
 
 ## Notes
 
 - The script only processes filings of type **13F-HR** and holdings with class **COM**.
-- There are some filings (quarters) that have no holdings with **COM** class, those quarters have been logged on console. 
-- For large data sets, the process may take several minutes (as of right now, it takes ~8 minutes, which was brought down from ~60 minutes by incorporating concurrent requests)
+- There are some filings (quarters) that have no holdings with **COM** class, those quarters have been logged on console.
 
 ## Scalability Thoughts
-- For larger data sets, it will be preferable to write the data to the csv in batches, instead of writing all rows at once (as has been done here), but since the size of the data is small (~100MB), storing the records in memory then writing it to the csv sounded like the more optimal approach.
+
+- For larger datasets, consider writing CSV files incrementally in batches rather than storing all batches(starting with letter X) in memory first before writing. Since currently most batches (~100MB) are manageable, batch writing hasn’t been prioritized, but it can improve memory efficiency for bigger workloads.
