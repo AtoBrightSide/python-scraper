@@ -6,7 +6,7 @@ import numpy as np
 from bs4 import BeautifulSoup
 from collections import defaultdict
 
-from src.models import Manager, Filing
+from src.models import Manager, Filing, Holding
 from src.api_client import APIClient
 from src.utils import merge_batch_files
 
@@ -21,7 +21,7 @@ class ThirteenFScraper:
             self.managers_url = f"{self.base_url}/managers/"
             self.api_client = APIClient()
         except KeyError as e:
-            print(f"Environment variable {e} not found")
+            logging.error(f"Environment variable {e} not found")
             raise e
 
         self.output_filename = os.path.join("data", output_filename)
@@ -30,12 +30,18 @@ class ThirteenFScraper:
     async def get_managers_by_letter(
         self, manager_letter_url, session: aiohttp.ClientSession
     ):
+        """
+        Keyword arguments:
+        manager_letter_url: Letter to scrape managers by
+        Returns a list of all Manager objects starting with manager_letter_url
+        """
+
         managers = []
         async with session.get(manager_letter_url) as response:
             try:
                 response.raise_for_status()
             except Exception as e:
-                print(f"Failed to fetch {manager_letter_url} with error: {e}")
+                logging.error(f"Failed to fetch {manager_letter_url} with error: {e}")
                 return []
 
             text = await response.text()
@@ -46,12 +52,16 @@ class ThirteenFScraper:
             )
 
             if not table:
-                print(f"Manager table not found on the page: {manager_letter_url}")
+                logging.warning(
+                    f"Manager table not found on the page: {manager_letter_url}"
+                )
                 return []
 
             tbody = table.find("tbody")
             if not tbody:
-                print(f"Manager table body not found on page: {manager_letter_url}")
+                logging.warning(
+                    f"Manager table body not found on page: {manager_letter_url}"
+                )
                 return []
 
             for tr in tbody.find_all("tr"):
@@ -76,7 +86,8 @@ class ThirteenFScraper:
 
     async def get_managers(self, session: aiohttp.ClientSession):
         """
-        Scrapes all managers from a - z and returns a list of Manager objects
+        Scrapes all managers from a - z and returns a list of Manager objects concurrently
+        Return: The list of all Manager objects (a - z)
         """
         tasks = []
         for letter in string.ascii_lowercase:
@@ -98,6 +109,8 @@ class ThirteenFScraper:
         """
         Asynchronously fetch a manager's page, parse the filings table, and populate the manager.filings list.
         Only filings with form type "13F-HR" are considered.
+        Keyword arguments:
+        manager: a Manager object for which the function fetches its page and scrapes its filings
         """
         async with session.get(manager.url) as response:
             response.raise_for_status()
@@ -137,8 +150,10 @@ class ThirteenFScraper:
     ):
         """
         For a given manager, fetch holdings for all quarters concurrently.
+        Keyword arguments:
+        manager: The Manager object to get all holdings for
         Returns a tuple (holdings_by_quarter, failed_records) where:
-          - holdings_by_quarter: a dictionary mapping Filing objects to their holdings lists.
+          - holdings_by_quarter: a dictionary mapping Filing objects to a list of Holdings.
           - failed_records: a list of dictionaries, each corresponding to a quarter whose holdings failed to be fetched.
         """
         tasks = []
@@ -179,6 +194,8 @@ class ThirteenFScraper:
           - Computes the previous_shares, change, percentage_change
           - Infers the transaction_type
           - Writes the final CSV file (excluding the temporary columns)
+        Keyword arguments:
+        records: a list of holdings that are to be saved to the output csv file
         """
         df = pd.DataFrame(records)
         df["filing_date"] = pd.to_datetime(df["filing_date"], errors="coerce")
@@ -252,6 +269,11 @@ class ThirteenFScraper:
             3. Accumulate records.
             4. Process and write CSV file for the batch.
             5. Return number of records processed and list of failed records.
+
+        Keyword arguments:
+        letter: The letter that is to be used to save this batch to
+        managers_list: The list of managers starting with a single letter
+
         """
         logger.info(
             f"Starting batch for letter {letter} with {len(managers_list)} managers"
@@ -313,10 +335,10 @@ class ThirteenFScraper:
                                 "fund_name": manager.name,
                                 "filing_date": filing.filing_date,
                                 "quarter": filing.quarter,
-                                "stock_symbol": holding["symbol"],
-                                "cl": holding["class"],
-                                "value_($000)": holding["value"],
-                                "shares": holding["shares"],
+                                "stock_symbol": holding.symbol,
+                                "cl": holding.cl,
+                                "value_($000)": holding.percentage,
+                                "shares": holding.shares,
                             }
                             batch_records.append(record)
         else:
@@ -343,6 +365,9 @@ class ThirteenFScraper:
         4. Use Pandas to process the records and infer transaction types.
         5. Write the processed records to a batch CSV file.
         6. Log any failed holdings.
+
+        Keyword Arguments:
+        letter - A single letter to fetch all managers with
         """
         logger.info(f"Starting batch run for letter: {letter.upper()}")
         failed_records_total = []

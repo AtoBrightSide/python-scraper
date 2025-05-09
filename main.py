@@ -31,18 +31,18 @@ def main():
         choice = prompt_user()
         if choice == "1":
             # scrape of all managers and holdings.
-            print("Starting full scrape. This may take a while...")
+            logging.info("Starting full scrape. This may take a while...")
             scraper = ThirteenFScraper()
             asyncio.run(scraper.run())
-            print("Full scrape completed.")
+            logging.info("Full scrape completed.")
         elif choice == "2":
             # merge all batch files into one final CSV.
-            print("Merging batch files into one final CSV...")
+            logging.info("Merging batch files into one final CSV...")
             merged_df = merge_batch_files(input_directory="data/batches")
             if merged_df is not None:
-                print("Merge completed successfully.")
+                logging.info("Merge completed successfully.")
             else:
-                print("No batch files were found to merge.")
+                logging.warning("No batch files were found to merge.")
         elif choice == "3":
             # re-scrape a specific batch based on the initial letter.
             letter = (
@@ -53,18 +53,18 @@ def main():
                 .upper()
             )
             if not letter or len(letter) != 1 or not letter.isalpha():
-                print("Invalid input. Please enter a single letter (A-Z).")
+                logging.warning("Invalid input. Please enter a single letter (A-Z).")
                 continue
 
-            print(f"Starting batch scrape for managers starting with '{letter}'")
+            logging.info(f"Starting batch scrape for managers starting with '{letter}'")
             scraper = ThirteenFScraper()
             asyncio.run(scraper.run_batch(letter))
-            print(f"Batch scrape for letter '{letter}' completed.")
+            logging.info(f"Batch scrape for letter '{letter}' completed.")
         elif choice == "4":
-            print("Exiting. Goodbye!")
+            logging.info("Exiting. Goodbye!")
             sys.exit(0)
         else:
-            print("Invalid choice. Please try again.")
+            logging.error("Invalid choice. Please try again.")
 
 
 if __name__ == "__main__":

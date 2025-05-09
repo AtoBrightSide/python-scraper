@@ -1,6 +1,8 @@
 import logging, aiohttp, os, asyncio
 import random
 
+from src.models import Holding
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,6 +17,9 @@ class APIClient:
     async def fetch_holdings(self, filing_id: str, session: aiohttp.ClientSession):
         """
         Fetch holdings data with retries using exponential backoff and jitter.
+        Keyword Arguments:
+        filing_id: the id of the quarter that is to be fetched
+        Returns Holding objects with 'COM' class for the filing provided
         """
         max_retries = 3
         base_delay = 1  # initial delay in seconds
@@ -47,14 +52,15 @@ class APIClient:
                         if record[0] is None or record[8] is not None:
                             continue
                         if record[2] == "COM":
-                            holding = {
-                                "symbol": record[0],
-                                "class": record[2],
-                                "value": record[4],
-                                "percentage": record[5],
-                                "shares": record[6],
-                            }
-                            holdings.append(holding)
+                            holdings.append(
+                                Holding(
+                                    record[0],
+                                    record[2],
+                                    record[4],
+                                    record[5],
+                                    record[6],
+                                )
+                            )
                     return holdings
 
             except aiohttp.ClientResponseError as e:
